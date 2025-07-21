@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp Disbursement Information</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 font-normal">
+    <!-- Main Container -->
+    <div id="containerDisbursement" class="container mx-auto px-4 py-8">
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h1 class="text-2xl font-bold text-gray-800">
+            WhatsApp Disbursement Information
+          </h1>
+
+          <button
+            id="logoutBtn"
+            class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-red-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- User Information -->
+        <div class="bg-blue-50 p-4 rounded-lg mb-6">
+          <h2 class="text-lg font-semibold text-blue-800 mb-2">User Details</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-600">Phone Number</p>
+              <p class="font-normal" id="phone-number">Loading...</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Platform</p>
+              <p class="font-normal" id="platform">Loading...</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Push Name</p>
+              <p class="font-normal" id="pushname">Loading...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disbursement Table -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold text-gray-800">
+              Disbursement Data
+            </h2>
+            <button
+              id="disbursement-btn"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              Process Disbursement
+            </button>
+          </div>
+
+          <!-- Loading state -->
+          <div id="loading-state" class="flex justify-center items-center py-8">
+            <div
+              class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"
+            ></div>
+          </div>
+
+          <!-- Data state (hidden initially) -->
+          <div id="data-state" class="hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                <thead class="bg-gray-200">
+                  <tr>
+                    <th class="py-3 px-4 text-left font-normal">No</th>
+                    <th class="py-3 px-4 text-left font-normal">Name</th>
+                    <th class="py-3 px-4 text-left font-normal">
+                      Phone Number
+                    </th>
+                    <th class="py-3 px-4 text-left font-normal">Class Name</th>
+                    <th class="py-3 px-4 text-left font-normal">QR Link</th>
+                    <th class="py-3 px-4 text-left font-normal">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y divide-gray-200">
+                  <!-- Data will be inserted here by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex justify-between items-center mt-4">
+              <div class="text-sm text-gray-600" id="pagination-info">
+                Showing 0 to 0 of 0 entries
+              </div>
+              <div class="flex space-x-2" id="pagination-controls">
+                <button
+                  class="px-3 py-1 border rounded-md bg-gray-100"
+                  disabled
+                  id="prev-btn"
+                >
+                  Previous
+                </button>
+                <button
+                  class="px-3 py-1 border rounded-md bg-gray-100"
+                  disabled
+                  id="next-btn"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error state (hidden initially) -->
+          <div
+            id="error-state"
+            class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded"
+          >
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg
+                  class="h-5 w-5 text-red-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p id="error-message" class="text-sm text-red-700">
+                  Error fetching data from API
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading first -->
+    <div
+      class="hidden w-screen h-screen bg-black/50 fixed top-0 left-0 z-50 flex justify-center items-center"
+    >
+      >
+      <div id="loading-first" class="flex justify-center items-center py-8">
+        <div
+          class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Login Form (hidden by default) -->
+    <div id="login-form" class="hidden py-12">
+      <h2 class="text-lg mb-4">Login with WhatsApp</h2>
+      <form id="wa-login-form" class="space-y-4">
+        <div>
+          <label for="wa-number" class="block text-sm font-medium text-gray-700"
+            >WhatsApp Number</label
+          >
+          <input
+            type="tel"
+            id="wa-number"
+            name="wa-number"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="081234567890"
+            required
+          />
+          <p class="mt-1 text-sm text-gray-500"></p>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          Login
+        </button>
+      </form>
+
+      <div id="containerCode" class="hidden space-y-4">
+        <p id="code-login" class="text-center"></p>
+        <p class="font-medium">refresh jika sudah berhasil login</p>
+      </div>
+    </div>
+
+    <script src="./index.js"></script>
+  </body>
+</html>
