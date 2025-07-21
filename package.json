@@ -1,0 +1,28 @@
+{
+  "name": "wa-gsheet",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --exec babel-node src/server.js --watch",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && babel src -d dist --copy-files",
+    "start": "node dist/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "googleapis": "^153.0.0",
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.31.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/node": "^7.28.0",
+    "@babel/preset-env": "^7.28.0"
+  }
+}
