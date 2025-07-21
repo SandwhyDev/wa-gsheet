@@ -1,14 +1,18 @@
 import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
+import LoadEnv from "./LoadENv";
+
+LoadEnv();
+
+const file = process.env.file_key || "your_file_key_here";
+const sheet_id = process.env.sheet_id || "your_file_key_here";
 
 const credentials = JSON.parse(
-  fs.readFileSync(
-    path.join(__dirname, "../../analog-hull-284010-ccea5608e83c.json")
-  )
+  fs.readFileSync(path.join(__dirname, `../../${file}`))
 );
 
-const spreadsheetId = "1Mmovkn5EuV5pr8WvraA7k4PDqoGwoaUeVGElpHeLPok";
+const spreadsheetId = sheet_id;
 const sheetName = "test";
 
 export async function updateSheetStatus(rowNumber, status) {

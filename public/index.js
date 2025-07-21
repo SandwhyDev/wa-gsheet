@@ -292,4 +292,4 @@ disbursementBtn.addEventListener("click", async () => {
 });
 
 // Initial data fetch
-// fetchData();
+fetchData();
