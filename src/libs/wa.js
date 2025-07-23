@@ -238,7 +238,17 @@ export const SendMessageWaBot = async (number, message) => {
       };
     }
 
+    const chat = await client.getChatById(phone_number);
+
+    // Set status "typing"
+    await chat.sendStateTyping();
+
+    // Tunggu 5 detik
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    // Kirim pesan dan timeout jika lebih dari 30 detik
     const sendPromise = client.sendMessage(phone_number, message);
+    await chat.clearState();
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Send message timeout")), 30000)
     );

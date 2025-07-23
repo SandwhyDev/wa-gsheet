@@ -78,13 +78,29 @@ send_message_controllers.post(`/disbursement`, async (req, res) => {
 
     // Fungsi untuk menangani pengiriman pesan di background
     async function sendMessagesInBackground(participants) {
-      for (const [index, participant] of participants.entries()) {
-        try {
-          if (participant.no_hp) {
-            const phoneNumber = participant.no_hp.replace(/^0/, "62");
-            participant.nama = kapitalSetiapKata(participant.nama);
+      const eligibleParticipants = participants
+        .map((participant, originalIndex) => ({
+          ...participant,
+          originalIndex,
+        }))
+        .filter(
+          (participant) => participant.no_hp && participant.status === null
+        );
 
-            const message = `
+      const totalMessages = eligibleParticipants.length;
+      const totalBatch = Math.ceil(totalMessages / 20);
+
+      console.log(`Total pesan yang akan dikirim: ${totalMessages}`);
+      console.log(`Total batch: ${totalBatch}`);
+
+      for (const [index, participant] of eligibleParticipants.entries()) {
+        try {
+          const currentBatch = Math.floor(index / 20) + 1; // Batch saat ini
+
+          const phoneNumber = participant.no_hp.replace(/^0/, "62");
+          participant.nama = kapitalSetiapKata(participant.nama);
+
+          const message = `
 Hi ${participant.nama},
 
 Terima kasih banyak telah membeli tiket Precious Women Conference 2025 – PURE JOY 💛
@@ -120,26 +136,39 @@ Adrian - 082119040648
 📸 Follow kami di Instagram: @preciouswomen_
       `.trim();
 
-            const send = await SendMessageWaBot(phoneNumber, message);
+          const send = await SendMessageWaBot(phoneNumber, message);
 
-            console.log(
-              `[${index + 1}/${participants.length}] Pesan terkirim ke ${
-                participant.nama
-              }`
-            );
+          console.log(
+            `[${
+              index + 1
+            }/${totalMessages}] (Batch ${currentBatch}/${totalBatch}) Pesan terkirim ke ${
+              participant.nama
+            }`
+          );
 
-            await ensureStatusHeader();
-            await updateSheetStatus(index + 2, "Terkirim");
+          await ensureStatusHeader();
+          await updateSheetStatus(participant.originalIndex + 2, "Terkirim");
 
-            if (index < participants.length - 1) {
-              const delayTime = Math.floor(Math.random() * 10000) + 5000;
-              console.log(`Menunggu ${delayTime / 1000} detik...`);
+          if (index < totalMessages - 1) {
+            if ((index + 1) % 20 === 0) {
+              // Delay setelah setiap batch 20 pesan
+              const batchDelayMinutes = Math.floor(Math.random() * 6) + 10; // 10–15 menit
+              const batchDelayMs = batchDelayMinutes * 60000;
+              console.log(
+                `✅ Batch ${currentBatch} selesai. Menunggu ${batchDelayMinutes} menit sebelum lanjut ke batch berikutnya...`
+              );
+              await delay(batchDelayMs);
+            } else {
+              // Delay antar pesan: 1–3 menit
+              const minuteDelay = Math.floor(Math.random() * 3) + 1;
+              const delayTime = minuteDelay * 60000;
+              console.log(`Menunggu ${minuteDelay} menit...`);
               await delay(delayTime);
             }
           }
         } catch (error) {
           console.error(`Gagal mengirim ke ${participant.nama}:`, error);
-          await delay(30000);
+          await delay(30000); // delay jika error
         }
       }
     }

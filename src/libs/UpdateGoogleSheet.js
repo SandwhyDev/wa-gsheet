@@ -24,17 +24,36 @@ export async function updateSheetStatus(rowNumber, status) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Update column E (5th column) with status
-    await sheets.spreadsheets.values.update({
+    // 1. Ambil header dari baris 1
+    const headerRes = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!E${rowNumber}`,
+      range: `${sheetName}!1:1`,
+    });
+
+    const headers = headerRes.data.values[0]; // Baris pertama (header)
+    const statusColIndex = headers.findIndex(
+      (header) => header.toLowerCase() === "status"
+    );
+
+    if (statusColIndex === -1) {
+      throw new Error('Kolom "Status" tidak ditemukan di header');
+    }
+
+    // 2. Konversi index ke huruf kolom (0=A, 1=B, dst.)
+    const columnLetter = String.fromCharCode(
+      "A".charCodeAt(0) + statusColIndex
+    );
+
+    // 3. Update sel di kolom sesuai header dan baris yang diberikan
+    const update = await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!${columnLetter}${rowNumber}`,
       valueInputOption: "USER_ENTERED",
       resource: {
         values: [[status]],
       },
     });
 
-    // console.log(`Updated status for row ${rowNumber} to ${status}`);
     return true;
   } catch (error) {
     console.error("Error updating sheet status:", error);
