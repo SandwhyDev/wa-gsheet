@@ -24,6 +24,7 @@ function convertSheetDataToJson(sheetData) {
   return sheetData.slice(1).map((row) => {
     return headers.reduce((obj, header, index) => {
       obj[header] = row[index] || null;
+
       return obj;
     }, {});
   });
@@ -47,12 +48,14 @@ export const ReadGoogleSheet = async () => {
     const values = response.data.values;
 
     if (!values || values.length === 0) {
-      console.log("Tidak ada data ditemukan.");
+      // console.log("Tidak ada data ditemukan.");
       return [];
     }
 
     // Gunakan fungsi convertSheetDataToJson untuk konversi
     const jsonData = convertSheetDataToJson(values);
+
+    // console.log(jsonData);
 
     return jsonData;
   } catch (err) {

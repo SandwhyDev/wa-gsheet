@@ -85,16 +85,39 @@ send_message_controllers.post(`/disbursement`, async (req, res) => {
             participant.nama = kapitalSetiapKata(participant.nama);
 
             const message = `
-Halo ${participant.nama} 👋
+Hi ${participant.nama},
 
-Selamat! Kamu terdaftar di kelas *${participant.kelas}*. 🎉  
-Untuk bergabung ke grup WhatsApp kelas, silakan scan QR code atau klik link berikut:
+Terima kasih banyak telah membeli tiket Precious Women Conference 2025 – PURE JOY 💛
 
-🔗 ${participant.link_qr}
+Kamu akan mengikuti master class ${participant.kelas}
 
-Pastikan kamu segera join agar tidak ketinggalan informasi penting ya.
+Berikut e-ticket kamu: 
 
-Sampai ketemu di kelas! 😊
+${participant.link_qr}
+
+Silakan tunjukkan e-ticket ini untuk ditukarkan dengan tiket fisik.
+
+📍 Penukaran tiket dapat dilakukan pada:
+23 Agustus 2025 di Feast Jakarta Barat atau Feast Jakarta Utara
+ATAU langsung pada hari-H, 30 Agustus 2025
+
+Precious Women Conference diadakan pada:
+📅 Tanggal: Sabtu, 30 Agustus 2025
+⏰ Waktu: 09:00–19:30 WIB
+🏛️ Tempat: House of Blessings, Jl. Lingkar Luar Barat No.108, Jakarta Barat 11610
+
+Kami percaya ini akan menjadi awal dari perjalanan pemulihan dan menemukan sukacita sejati di dalam Tuhan Yesus. ✨😍
+
+Sampai jumpa di tanggal 30 Agustus 2025 ya!
+#JOYISNOW
+
+📲 Untuk pertanyaan atau info lebih lanjut, hubungi:
+Ratna – 0857-1812-0654 / 0815-8006-504
+Ferdinand – 0815-2362-2000
+Adrian - 082119040648
+
+🔗 Info lengkap acara: https://lojf.id/pwc2025/
+📸 Follow kami di Instagram: @preciouswomen_
       `.trim();
 
             const send = await SendMessageWaBot(phoneNumber, message);

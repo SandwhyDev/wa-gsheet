@@ -34,7 +34,7 @@ export async function updateSheetStatus(rowNumber, status) {
       },
     });
 
-    console.log(`Updated status for row ${rowNumber} to ${status}`);
+    // console.log(`Updated status for row ${rowNumber} to ${status}`);
     return true;
   } catch (error) {
     console.error("Error updating sheet status:", error);
@@ -67,7 +67,7 @@ export async function ensureStatusHeader() {
           values: [["Status"]],
         },
       });
-      console.log("Added Status header to column E");
+      // console.log("Added Status header to column E");
     }
   } catch (error) {
     console.error("Error ensuring status header:", error);
