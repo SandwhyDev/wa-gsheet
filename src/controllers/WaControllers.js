@@ -146,7 +146,7 @@ Adrian - 082119040648
             }`
           );
 
-          await ensureStatusHeader();
+          // await ensureStatusHeader();
           await updateSheetStatus(participant.originalIndex + 2, "Terkirim");
 
           if (index < totalMessages - 1) {
