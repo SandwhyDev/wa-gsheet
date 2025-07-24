@@ -138,20 +138,33 @@ Adrian - 082119040648
 
           const send = await SendMessageWaBot(phoneNumber, message);
 
-          console.log(
-            `[${
-              index + 1
-            }/${totalMessages}] (Batch ${currentBatch}/${totalBatch}) Pesan terkirim ke ${
-              participant.nama
-            }`
-          );
+          if (send.success) {
+            console.log(
+              `[${
+                index + 1
+              }/${totalMessages}] (Batch ${currentBatch}/${totalBatch}) ✅ Pesan terkirim ke ${
+                participant.nama
+              }`
+            );
 
-          // await ensureStatusHeader();
-          await updateSheetStatus(participant.originalIndex + 2, "Terkirim");
+            // Update status di Google Sheets jika berhasil
+            await updateSheetStatus(participant.originalIndex + 2, "Terkirim");
+          } else {
+            console.log(
+              `[${
+                index + 1
+              }/${totalMessages}] (Batch ${currentBatch}/${totalBatch}) ❌ Pesan TIDAK terkirim ke ${
+                participant.nama
+              }`
+            );
+            //  update status "Gagal" :
+            await updateSheetStatus(participant.originalIndex + 2, "Gagal");
+          }
 
+          // Penundaan antar pesan
           if (index < totalMessages - 1) {
             if ((index + 1) % 20 === 0) {
-              // Delay setelah setiap batch 20 pesan
+              // Delay antar batch (setiap 20 pesan)
               const batchDelayMinutes = Math.floor(Math.random() * 6) + 10; // 10–15 menit
               const batchDelayMs = batchDelayMinutes * 60000;
               console.log(
