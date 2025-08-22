@@ -238,6 +238,16 @@ export const SendMessageWaBot = async (number, message) => {
       };
     }
 
+    const isRegistered = await client.isRegisteredUser(phone_number);
+    // console.log("number ", isRegistered);
+
+    if (!isRegistered) {
+      return {
+        success: false,
+        message: "Nomor tidak terdaftar di WhatsApp",
+      };
+    }
+
     const chat = await client.getChatById(phone_number);
 
     // Set status "typing"
@@ -255,10 +265,34 @@ export const SendMessageWaBot = async (number, message) => {
 
     result = await Promise.race([sendPromise, timeoutPromise]);
 
+    // Tambahkan pengecekan ACK untuk memastikan pesan terkirim
+    const ackPromise = new Promise((resolve, reject) => {
+      // Timeout untuk ACK
+      const ackTimeout = setTimeout(() => {
+        // reject(new Error("ACK timeout - message not delivered"));
+      }, 30000);
+
+      // Listener untuk ACK
+      client.once("message_ack", (msg, ack) => {
+        if (msg.id.id === result.id.id) {
+          clearTimeout(ackTimeout);
+          if (ack >= 1) {
+            // ACK.SENT (1) atau lebih tinggi
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        }
+      });
+    });
+
+    // Tunggu konfirmasi ACK
+    const ack = await ackPromise;
+
     return {
       success: true,
       message: "berhasil terkirim",
-      result: result,
+      result: ack,
     };
   } catch (error) {
     // console.error("SendMessageWaBot Error:", error);

@@ -1,3 +1,5 @@
+import { DataPesan } from "./constant/data.js";
+
 // Initialize variables
 let currentPage = 1;
 const rowsPerPage = 10;
@@ -28,6 +30,126 @@ const errorMessage = document.getElementById("error-message");
 const phoneNumber = document.getElementById("phone-number");
 const platform = document.getElementById("platform");
 const pushname = document.getElementById("pushname");
+
+// Form handling script
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("disbursement-config-form");
+  const resetBtn = document.getElementById("reset-config-btn");
+  const processingStatus = document.getElementById("processing-status");
+  const successStatus = document.getElementById("success-status");
+
+  document.getElementById("message").value = DataPesan.message;
+  document.getElementById("limit").value = DataPesan.limit;
+  document.getElementById("batch_size").value = DataPesan.batch_size;
+  document.getElementById("msg_delay_min").value =
+    DataPesan.delay_between_messages.min;
+  document.getElementById("msg_delay_max").value =
+    DataPesan.delay_between_messages.max;
+  document.getElementById("batch_delay_min").value =
+    DataPesan.delay_between_batches.min;
+  document.getElementById("batch_delay_max").value =
+    DataPesan.delay_between_batches.max;
+
+  // Reset form to defaults
+  resetBtn.addEventListener("click", function () {
+    document.getElementById("message").value = "";
+    document.getElementById("limit").value = "";
+    document.getElementById("batch_size").value = "20";
+    document.getElementById("msg_delay_min").value = "1";
+    document.getElementById("msg_delay_max").value = "3";
+    document.getElementById("batch_delay_min").value = "10";
+    document.getElementById("batch_delay_max").value = "15";
+  });
+
+  // Form validation
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    // Validate delay ranges
+    const msgDelayMin = parseInt(
+      document.getElementById("msg_delay_min").value
+    );
+    const msgDelayMax = parseInt(
+      document.getElementById("msg_delay_max").value
+    );
+    const batchDelayMin = parseInt(
+      document.getElementById("batch_delay_min").value
+    );
+    const batchDelayMax = parseInt(
+      document.getElementById("batch_delay_max").value
+    );
+
+    if (msgDelayMin >= msgDelayMax) {
+      alert("Message delay minimum must be less than maximum");
+      return;
+    }
+
+    if (batchDelayMin >= batchDelayMax) {
+      alert("Batch delay minimum must be less than maximum");
+      return;
+    }
+
+    // Collect form data
+    const formData = {
+      message: document.getElementById("message").value.trim() || undefined,
+      limit: document.getElementById("limit").value
+        ? parseInt(document.getElementById("limit").value)
+        : undefined,
+      batch_size: parseInt(document.getElementById("batch_size").value),
+      delay_between_messages: {
+        min: msgDelayMin,
+        max: msgDelayMax,
+      },
+      delay_between_batches: {
+        min: batchDelayMin,
+        max: batchDelayMax,
+      },
+    };
+
+    // Remove undefined values
+    Object.keys(formData).forEach((key) => {
+      if (formData[key] === undefined) {
+        delete formData[key];
+      }
+    });
+
+    // Show processing status
+    processingStatus.classList.remove("hidden");
+    successStatus.classList.add("hidden");
+
+    const processingDetails = document.getElementById("processing-details");
+    processingDetails.textContent = `Batch size: ${formData.batch_size}, Message delay: ${formData.delay_between_messages.min}-${formData.delay_between_messages.max}min, Batch delay: ${formData.delay_between_batches.min}-${formData.delay_between_batches.max}min`;
+
+    // Send request to API
+    fetch("/api/send-message/disbursement", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        processingStatus.classList.add("hidden");
+
+        if (data.success) {
+          successStatus.classList.remove("hidden");
+          const successDetails = document.getElementById("success-details");
+          successDetails.textContent = `Configuration: ${
+            data.configuration.total_data
+          } total records, ${
+            data.configuration.limit_recipients || "no"
+          } limit, ${data.configuration.estimated_batches} estimated batches`;
+        } else {
+          alert("Error: " + data.error);
+        }
+      })
+      .catch((error) => {
+        processingStatus.classList.add("hidden");
+        alert("Network error: " + error.message);
+      });
+  });
+});
 
 // Function to fetch data from API
 async function fetchData() {
@@ -252,20 +374,63 @@ disbursementBtn.addEventListener("click", async () => {
     disbursementBtn.classList.remove("bg-green-600", "hover:bg-green-700");
     disbursementBtn.classList.add("bg-gray-400");
 
+    // Validate delay ranges
+    const msgDelayMin = parseInt(
+      document.getElementById("msg_delay_min").value
+    );
+    const msgDelayMax = parseInt(
+      document.getElementById("msg_delay_max").value
+    );
+    const batchDelayMin = parseInt(
+      document.getElementById("batch_delay_min").value
+    );
+    const batchDelayMax = parseInt(
+      document.getElementById("batch_delay_max").value
+    );
+
+    if (msgDelayMin >= msgDelayMax) {
+      alert("Message delay minimum must be less than maximum");
+      return;
+    }
+
+    if (batchDelayMin >= batchDelayMax) {
+      alert("Batch delay minimum must be less than maximum");
+      return;
+    }
+
+    // Collect form data
+    const formData = {
+      message: document.getElementById("message").value.trim() || undefined,
+      limit: document.getElementById("limit").value
+        ? parseInt(document.getElementById("limit").value)
+        : undefined,
+      batch_size: parseInt(document.getElementById("batch_size").value),
+      delay_between_messages: {
+        min: msgDelayMin,
+        max: msgDelayMax,
+      },
+      delay_between_batches: {
+        min: batchDelayMin,
+        max: batchDelayMax,
+      },
+    };
+
+    // Remove undefined values
+    Object.keys(formData).forEach((key) => {
+      if (formData[key] === undefined) {
+        delete formData[key];
+      }
+    });
+
     // Make API call to disbursement endpoint
-    const response = await fetch("http://localhost:8000/api/disbursement", {
+    const response = await fetch(`${window.location.origin}/api/disbursement`, {
       method: "POST", // Assuming this is a POST endpoint
       headers: {
         "Content-Type": "application/json",
         // Add any required headers here (e.g., authorization)
         // 'Authorization': 'Bearer your-token'
       },
-      body: JSON.stringify({
-        // Include any required data in the request body
-        // For example:
-        wid: responseData.message.wid,
-        data: responseData.data,
-      }),
+      body: JSON.stringify(formData),
     });
 
     if (!response.ok) {

@@ -22,8 +22,10 @@ async function initwa() {
   const test = await initializeWaBot();
   console.log(test);
 
+  // const batchDelayMinutes = Math.floor(Math.random()); // 10–15 menit
+
   // const oi = await ReadGoogleSheet();
-  // console.log(oi);
+  // console.log(batchDelayMinutes);
 }
 
 initwa();

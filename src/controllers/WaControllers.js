@@ -11,6 +11,7 @@ import {
   ensureStatusHeader,
   updateSheetStatus,
 } from "../libs/UpdateGoogleSheet";
+import { DataPesan } from "../../public/constant/data";
 
 const send_message_controllers = express.Router();
 
@@ -76,9 +77,41 @@ send_message_controllers.post(`/disbursement`, async (req, res) => {
       return str.replace(/\b\w/g, (char) => char.toUpperCase());
     }
 
+    // Destructure dari req.body dengan fallback ke DataPesan
+    const {
+      message: customMessage = DataPesan.message,
+      limit: maxRecipients = DataPesan.limit || null,
+      batch_size: batchSize = DataPesan.batch_size || 20,
+      delay_between_messages:
+        messagedelayMinutes = DataPesan.delay_between_messages || {
+          min: 1,
+          max: 3,
+        },
+      delay_between_batches:
+        batchDelayMinutes = DataPesan.delay_between_batches || {
+          min: 10,
+          max: 15,
+        },
+    } = req.body;
+
+    // Validasi input
+    if (batchSize <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Batch size harus lebih besar dari 0",
+      });
+    }
+
+    if (maxRecipients !== null && maxRecipients <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Limit recipients harus lebih besar dari 0",
+      });
+    }
+
     // Fungsi untuk menangani pengiriman pesan di background
     async function sendMessagesInBackground(participants) {
-      const eligibleParticipants = participants
+      let eligibleParticipants = participants
         .map((participant, originalIndex) => ({
           ...participant,
           originalIndex,
@@ -87,56 +120,52 @@ send_message_controllers.post(`/disbursement`, async (req, res) => {
           (participant) => participant.no_hp && participant.status === null
         );
 
+      // Batasi jumlah penerima jika maxRecipients ditentukan
+      if (maxRecipients && maxRecipients > 0) {
+        eligibleParticipants = eligibleParticipants.slice(0, maxRecipients);
+        console.log(
+          `Dibatasi hanya ${maxRecipients} penerima dari ${
+            participants.filter((p) => p.no_hp && p.status === null).length
+          } data yang memenuhi syarat`
+        );
+      }
+
       const totalMessages = eligibleParticipants.length;
-      const totalBatch = Math.ceil(totalMessages / 20);
+      const totalBatch = Math.ceil(totalMessages / batchSize);
 
       console.log(`Total pesan yang akan dikirim: ${totalMessages}`);
       console.log(`Total batch: ${totalBatch}`);
+      console.log(`Ukuran batch: ${batchSize}`);
 
       for (const [index, participant] of eligibleParticipants.entries()) {
         try {
-          const currentBatch = Math.floor(index / 20) + 1; // Batch saat ini
+          const currentBatch = Math.floor(index / batchSize) + 1; // Batch saat ini
 
           const phoneNumber = participant.no_hp.replace(/^0/, "62");
           participant.nama = kapitalSetiapKata(participant.nama);
 
-          const message = `
-Hi ${participant.nama},
+          // Gunakan pesan custom atau pesan default
+          let finalMessage;
+          if (customMessage) {
+            // Replace placeholder dengan data participant
+            finalMessage = customMessage
+              .replace(/\{nama\}/g, participant.nama)
+              .replace(/\{no_hp\}/g, participant.no_hp)
+              .replace(/\{index\}/g, index + 1)
+              .replace(/\{kelas\}/g, participant.kelas || "N/A")
+              .replace(/\{link_qr\}/g, participant.link_qr || "N/A");
+          } else {
+            // Pesan default
+            finalMessage = `
+${index + 1}. Hi ${participant.nama},
 
-Terima kasih banyak telah membeli tiket Precious Women Conference 2025 – PURE JOY 💛
 
-Kamu akan mengikuti master class ${participant.kelas}
+            `.trim();
+          }
 
-Berikut e-ticket kamu: 
+          const send = await SendMessageWaBot(phoneNumber, finalMessage);
 
-${participant.link_qr}
-
-Silakan tunjukkan e-ticket ini untuk ditukarkan dengan tiket fisik.
-
-📍 Penukaran tiket dapat dilakukan pada:
-23 Agustus 2025 di Feast Jakarta Barat atau Feast Jakarta Utara
-ATAU langsung pada hari-H, 30 Agustus 2025
-
-Precious Women Conference diadakan pada:
-📅 Tanggal: Sabtu, 30 Agustus 2025
-⏰ Waktu: 09:00–19:30 WIB
-🏛️ Tempat: House of Blessings, Jl. Lingkar Luar Barat No.108, Jakarta Barat 11610
-
-Kami percaya ini akan menjadi awal dari perjalanan pemulihan dan menemukan sukacita sejati di dalam Tuhan Yesus. ✨😍
-
-Sampai jumpa di tanggal 30 Agustus 2025 ya!
-#JOYISNOW
-
-📲 Untuk pertanyaan atau info lebih lanjut, hubungi:
-Ratna – 0857-1812-0654 / 0815-8006-504
-Ferdinand – 0815-2362-2000
-Adrian - 082119040648
-
-🔗 Info lengkap acara: https://lojf.id/pwc2025/
-📸 Follow kami di Instagram: @preciouswomen_
-      `.trim();
-
-          const send = await SendMessageWaBot(phoneNumber, message);
+          console.log("cek send : ", send);
 
           if (send.success) {
             console.log(
@@ -163,19 +192,27 @@ Adrian - 082119040648
 
           // Penundaan antar pesan
           if (index < totalMessages - 1) {
-            if ((index + 1) % 20 === 0) {
-              // Delay antar batch (setiap 20 pesan)
-              const batchDelayMinutes = Math.floor(Math.random() * 6) + 10; // 10–15 menit
-              const batchDelayMs = batchDelayMinutes * 60000;
+            if ((index + 1) % batchSize === 0) {
+              // Delay antar batch
+              const delayMin = batchDelayMinutes.min || 10;
+              const delayMax = batchDelayMinutes.max || 15;
+              const randomBatchDelay =
+                Math.floor(Math.random() * (delayMax - delayMin + 1)) +
+                delayMin;
+              const batchDelayMs = randomBatchDelay * 60000;
               console.log(
-                `✅ Batch ${currentBatch} selesai. Menunggu ${batchDelayMinutes} menit sebelum lanjut ke batch berikutnya...`
+                `✅ Batch ${currentBatch} selesai. Menunggu ${randomBatchDelay} menit sebelum lanjut ke batch berikutnya...`
               );
               await delay(batchDelayMs);
             } else {
-              // Delay antar pesan: 1–3 menit
-              const minuteDelay = Math.floor(Math.random() * 3) + 1;
-              const delayTime = minuteDelay * 60000;
-              console.log(`Menunggu ${minuteDelay} menit...`);
+              // Delay antar pesan
+              const delayMin = messagedelayMinutes.min || 1;
+              const delayMax = messagedelayMinutes.max || 3;
+              const randomMessageDelay =
+                Math.floor(Math.random() * (delayMax - delayMin + 1)) +
+                delayMin;
+              const delayTime = randomMessageDelay * 60000;
+              console.log(`Menunggu ${randomMessageDelay} menit...`);
               await delay(delayTime);
             }
           }
@@ -200,11 +237,29 @@ Adrian - 082119040648
         });
     }
 
-    // Langsung kembalikan response
+    // Langsung kembalikan response dengan info konfigurasi
     res.status(200).json({
       success: true,
       message: "Proses pengiriman pesan sedang berjalan",
-      total_recipients: test?.length || 0,
+      configuration: {
+        total_data: test?.length || 0,
+        limit_recipients: maxRecipients,
+        batch_size: batchSize,
+        estimated_batches: maxRecipients
+          ? Math.ceil(
+              Math.min(
+                maxRecipients,
+                test?.filter((p) => p.no_hp && p.status === null).length || 0
+              ) / batchSize
+            )
+          : Math.ceil(
+              (test?.filter((p) => p.no_hp && p.status === null).length || 0) /
+                batchSize
+            ),
+        delay_between_messages: `${messagedelayMinutes.min}-${messagedelayMinutes.max} menit`,
+        delay_between_batches: `${batchDelayMinutes.min}-${batchDelayMinutes.max} menit`,
+        custom_message: customMessage ? "Ya" : "Default",
+      },
       immediate_response: true,
     });
   } catch (error) {
